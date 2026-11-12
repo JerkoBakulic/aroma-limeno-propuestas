@@ -134,7 +134,7 @@ body { font-family: var(--p-body); -moz-osx-font-smoothing: grayscale; }
 
 /* ---------- signature: la mesa en siete tiempos ---------- */
 .p-tiempos { position: relative; background: var(--p-bg); }
-.js .p-tiempos { height: 760svh; }
+.js .p-tiempos { height: 560svh; }
 .p-tiempos__stage { --d: min(64vh, 540px, 42vw); position: relative; }
 .js .p-tiempos__stage { position: sticky; top: var(--p-top); height: calc(100svh - var(--p-top)); overflow: clip; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 32px; align-items: center; padding: 0 max(16px, (100% - var(--wrap)) / 2); }
 .p-ghost { position: absolute; inset: 0; pointer-events: none; }
@@ -404,3 +404,12 @@ html:not(.js) .p-step__img { display: block; width: min(420px, 100%); aspect-rat
   .p-tabs, .p-toc { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 40px), transparent); }
   .p-tabs::after, .p-toc::after { content: ""; flex: none; width: 24px; }
 }
+/* Textos de Noir y oro (versión final) */
+.p-enc__head { margin-top: clamp(90px, 14vh, 150px); }
+.p-enc__head + .p-enc { margin-top: 48px; }
+.p-casa__txt b { color: var(--p-ink); font-weight: 600; }
+.p-foot__head { display: block !important; margin-bottom: clamp(56px, 9vh, 96px); }
+.p-foot__title { font-family: var(--p-display); font-weight: 400; font-size: clamp(56px, 9vw, 150px); line-height: .92; letter-spacing: -.03em; margin: 18px 0 0; }
+.p-foot__title em { color: #e2a184; }
+.p-hero__title em { padding-left: .3em; }
+@media (min-width: 761px) { .p-hero__title em { white-space: nowrap; font-size: .74em; padding-left: .2em; } }

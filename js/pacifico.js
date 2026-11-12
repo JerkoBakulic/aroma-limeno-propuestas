@@ -64,7 +64,7 @@
       l.style.clipPath = `circle(${(r * 72).toFixed(2)}% at 50% 50%)`;
       const img = l.firstElementChild;
       img.style.setProperty('--r', `${((1 - r) * -18).toFixed(2)}deg`);
-      img.style.setProperty('--s', ((k === 2 ? 1.35 : 1.2) - .14 * r).toFixed(4));
+      img.style.setProperty('--s', (1.2 - .14 * r).toFixed(4));
     });
     ghosts.forEach((g, k) => {
       const en = k ? sstep(k - .32, k + .04, c) : 1, ex = k < N - 1 ? sstep(k + .68, k + .98, c) : 0;
