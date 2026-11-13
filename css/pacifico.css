@@ -9,8 +9,8 @@
   --p-mute: #5b6676;
   --p-line: #dcd4c6;
   --p-clay: #a9502f;
-  --p-display: "Instrument Serif", Georgia, "Times New Roman", serif;
-  --p-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --p-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --p-body: "Jost", system-ui, -apple-system, "Segoe UI", sans-serif;
   --p-nav: 72px;
   --p-top: calc(var(--sw-h) + var(--p-nav));
   --p-ease: cubic-bezier(.16, 1, .3, 1);
