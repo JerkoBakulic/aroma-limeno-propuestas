@@ -48,44 +48,40 @@
   const fitStamp = () => ajustar($('.p-stamp textPath'), 2 * Math.PI * 46 - 2);
   fitStamp(); document.fonts && document.fonts.ready.then(() => { fitStamp(); activo = -1; onScroll(); });
 
-  /* =============== la mesa en siete tiempos =============== */
+  /* =============== los cinco tiempos: banda horizontal =============== */
   const T = $('.p-tiempos'), stage = $('.p-tiempos__stage');
-  const layers = $$('.p-plate__l'), ghosts = $$('.p-ghost span'), steps = $$('.p-step'), ticks = $$('.p-ticks li');
-  const ringT = $('.p-ring__t'), ringSvg = $('.p-ring'), N = steps.length;
+  const track0 = $('.p-band__track'), mains = $$('.p-band__t[data-k]'), steps = $$('.p-step'), ticks = $$('.p-ticks li'), fills = $$('.p-ticks__f');
+  const tickerT = $('.p-ticker__t'), bandN = $('.p-band__n b'), N = steps.length;
+  const ROM = ['I', 'II', 'III', 'IV', 'V'];
   let target = 0, smooth = -1, activo = -1, raf = 0;
   function medir() {
     const r = T.getBoundingClientRect(), recorrido = T.offsetHeight - stage.offsetHeight;
     target = clamp((pTop() - r.top) / Math.max(1, recorrido)) * (N - .2);
   }
+  function ticker(t) {
+    const una = Array.from({ length: 4 }, () => `<span>${esc(t)}</span><span>·</span>`).join('');
+    tickerT.innerHTML = una + una;
+  }
   function pintarTiempos(c) {
-    layers.forEach((l, k) => {
-      if (!k) return;
-      const r = sstep(k - .24, k + .04, c);
-      l.style.clipPath = `circle(${(r * 72).toFixed(2)}% at 50% 50%)`;
-      const img = l.firstElementChild;
-      img.style.setProperty('--r', `${((1 - r) * -18).toFixed(2)}deg`);
-      img.style.setProperty('--s', (1.2 - .14 * r).toFixed(4));
-    });
-    ghosts.forEach((g, k) => {
-      const en = k ? sstep(k - .32, k + .04, c) : 1, ex = k < N - 1 ? sstep(k + .68, k + .98, c) : 0;
-      g.style.opacity = (.075 * en * (1 - ex)).toFixed(4);
-      g.style.transform = `translate(calc(-50% + ${((ex - (1 - en)) * -5).toFixed(2)}vw), -54%)`;
-    });
+    if (mains.length) {
+      const t0 = mains[0], paso = mains[1] ? mains[1].offsetLeft - t0.offsetLeft : t0.offsetWidth;
+      const x = innerWidth / 2 - (t0.offsetLeft + t0.offsetWidth / 2) - c * paso;
+      track0.style.setProperty('--tx', `${x.toFixed(1)}px`);
+    }
     steps.forEach((s, k) => {
       const l = c - k, en = k ? sstep(-.16, .06, l) : 1, ex = k < N - 1 ? sstep(.74, .90, l) : 0, o = en * (1 - ex);
       s.style.opacity = o.toFixed(4);
-      s.style.transform = `translateY(${((1 - en) * 40 - ex * 40).toFixed(1)}px)`;
+      s.style.transform = `translateX(${((1 - en) * 40 - ex * 40).toFixed(1)}px)`;
       s.style.visibility = o < .01 ? 'hidden' : 'visible';
     });
+    fills.forEach((f, k) => f.style.setProperty('--f', clamp(c - k + .2).toFixed(3)));
     const a = clamp(Math.floor(c + .1), 0, N - 1);
-    ringSvg.style.setProperty('--ring', `${(c * 34).toFixed(2)}deg`);
     if (a !== activo) {
       activo = a;
-      const t = steps[a].dataset.ring;
-      ringT.textContent = `${t} · ${t} ·`;
-      ajustar(ringT, 2 * Math.PI * 93 - 3);
-      if (!reduce) ringSvg.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, easing: 'ease-out' });
-      ticks.forEach((tk, k) => { tk.classList.toggle('is-on', k === a); tk.classList.toggle('was', k < a); });
+      ticker(steps[a].dataset.ring);
+      bandN.textContent = ROM[a] || '';
+      ticks.forEach((tk, k) => tk.classList.toggle('is-on', k === a));
+      mains.forEach((tl, k) => tl.classList.toggle('is-on', k === a));
     }
   }
   function loopTiempos() {
@@ -178,10 +174,11 @@
   function itemHTML(it, k, donde, marcar) {
     const desc = [it.d, it.x].filter(Boolean).join('. ');
     const hl = t => { const e = esc(t); if (!marcar) return e; const i = norm(t).indexOf(marcar); return i < 0 ? e : esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + marcar.length)) + '</mark>' + esc(t.slice(i + marcar.length)); };
-    return `<li class="p-item${it.f ? ' has-th' : ''}" tabindex="0" style="--i:${Math.min(k, 24)}" data-f="${it.f || ''}" data-n="${esc(it.n)}" data-p="${esc(precio(it))}">
+    return `<li class="p-item${it.f ? ' has-th' : ''}" tabindex="0" role="button" aria-haspopup="dialog" style="--i:${Math.min(k, 24)}" data-f="${it.f || ''}" data-n="${esc(it.n)}" data-p="${esc(precio(it))}">
       ${donde ? `<span class="p-item__where">${esc(donde)}</span>` : ''}
       <span class="p-item__name">${hl(it.n)}${it.f ? '<i title="Con foto"></i>' : ''}</span><span class="p-item__price">${precio(it)}</span>
       ${desc ? `<p class="p-item__desc">${esc(desc)}</p>` : ''}
+      <span class="p-item__more" aria-hidden="true">Ver detalle</span>
       ${it.f ? `<img class="p-item__th" src="${it.f}" alt="" loading="lazy">` : ''}</li>`;
   }
   function vecino(d) {
@@ -298,4 +295,161 @@
       $('#p-carta').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
     });
   });
+
+  /* =============== ficha del plato + calculadora =============== */
+  const WA_NUM = '56944242444', AGIL = 'https://aromalimeno.getagil.com/pedir';
+  const dish = $('.p-dish'), panel = $('.p-dish__panel');
+  const todos = [];
+  CARTA.forEach(g => g.s.forEach(s => s.items.forEach(it => todos.push({ it, g, s }))));
+  const secAgr = (CARTA.find(g => g.k === 'cocina') || { s: [] }).s.find(s => norm(s.n) === 'agregados');
+  const AGR = secAgr ? secAgr.items.map(i => ({ n: i.n.replace(/^Porción de /i, ''), p: i.p })) : [];
+  const agr = re => AGR.find(a => re.test(norm(a.n)));
+  /* acompañamientos que se reconocen en la descripción del plato → porción equivalente de la carta */
+  const LADOS = [
+    { re: /(acompanad[oa]s? (con|de)|con|y|,)\s+arroz(?! frito)/, a: /^arroz/, n: 'Arroz' },
+    { re: /papas fritas/, a: /^papas fritas/, n: 'Papas fritas' },
+    { re: /pure de papas|pure(?! de (camote|pallares))/, a: /^pure/, n: 'Puré de papas' },
+    { re: /camote/, a: /^camote/, n: 'Camote' },
+    { re: /\byucas?\b/, a: /^yuca/, n: 'Yuca' },
+    { re: /verduras salteadas/, a: /^verduras/, n: 'Verduras salteadas' },
+  ];
+  const ladosDe = it => {
+    const t = norm(it.d || '');
+    return LADOS.filter(l => l.re.test(t)).map(l => ({ ...l, p: (agr(l.a) || {}).p })).filter(l => l.p);
+  };
+  /* versiones del mismo plato en la sección: «Arroz Chaufa de Pollo / de Carne / de Mariscos» */
+  const baseDe = n => { const m = norm(n).match(/^(.+?) de (.+)$/); return m ? m[1] : null; };
+  const variantesDe = (it, s) => {
+    const b = baseDe(it.n); if (!b) return [];
+    const v = s.items.filter(x => baseDe(x.n) === b && !x.p2);
+    return v.length > 1 ? v : [];
+  };
+  const comida = g => g.k === 'cocina' || g.k === 'sushi';
+  let ficha = null, origen = null;
+
+  function abrirFicha(nombre) {
+    const r = todos.find(x => x.it.n === nombre); if (!r) return;
+    const { it, g, s } = r;
+    const vars = comida(g) ? variantesDe(it, s) : [];
+    const lados = comida(g) && norm(s.n) !== 'agregados' ? ladosDe(it) : [];
+    const extras = comida(g) && norm(s.n) !== 'agregados' && g.k === 'cocina' ? AGR : [];
+    ficha = { it, s, vars, lados, extras };
+    const opt = (name, val, label, extra, chk, type = 'radio') =>
+      `<label class="p-opt"><input type="${type}" name="${name}" value="${val}"${chk ? ' checked' : ''}><span>${esc(label)}${extra ? ` <small>${extra}</small>` : ''}</span></label>`;
+    const dif = (a, b) => { const d = Math.max(0, a - b); return d ? '+' + clp(d) : 'sin costo'; };
+    let calc = '';
+    if (vars.length) calc += `<fieldset class="p-calc__g"><legend>Elige la proteína</legend><div class="p-opts">${vars.map((v, i) => opt('var', i, v.n.replace(new RegExp('^.+? de ', 'i'), ''), clp(v.p), v === it)).join('')}</div></fieldset>`;
+    lados.forEach((l, k) => {
+      calc += `<fieldset class="p-calc__g"><legend>Cambiar acompañamiento <em>${esc(l.n)}</em></legend><div class="p-opts">${opt('lado' + k, -1, 'Mantener ' + l.n.toLowerCase(), '', true)}${AGR.filter(a => !l.a.test(norm(a.n))).map(a => opt('lado' + k, AGR.indexOf(a), a.n, dif(a.p, l.p))).join('')}</div></fieldset>`;
+    });
+    if (extras.length) calc += `<fieldset class="p-calc__g"><legend>Agregar una porción</legend><div class="p-opts">${extras.map((a, i) => opt('extra', i, a.n, '+' + clp(a.p), false, 'checkbox')).join('')}</div></fieldset>`;
+    const tieneCalc = !!calc;
+    const desc = [it.d, it.x].filter(Boolean).join('. ');
+    panel.innerHTML = `<button class="p-dish__x" type="button" data-cerrar aria-label="Cerrar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      ${it.f ? `<figure class="p-dish__fig"><img src="${it.f}" alt="${esc(it.n)}"></figure>` : ''}
+      <div class="p-dish__body">
+        <p class="p-dish__sec">${esc(g.n)} · ${esc(s.n)}</p>
+        <h2 id="p-dish-h">${esc(it.n)}</h2>
+        ${desc ? `<p class="p-dish__desc">${esc(desc)}</p>` : ''}
+        <p class="p-dish__base"><span>Precio en carta</span><b>${precio(it)}</b></p>
+        ${tieneCalc ? `<form class="p-calc">${calc}
+          <div class="p-calc__tot" aria-live="polite"><span>Total estimado</span><b class="p-calc__v"></b></div>
+          <p class="p-calc__det"></p>
+          <p class="p-calc__note">Precios de la carta vigente. Al cambiar un acompañamiento solo se cobra la diferencia si el nuevo cuesta más; confírmalo con tu garzón o al pedir.</p></form>` : ''}
+        <div class="p-dish__acts">
+          <a class="p-pill p-dish__wa" href="#" target="_blank" rel="noopener"><span class="p-pill__l">Consultar por WhatsApp</span><span class="p-pill__c" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span></a>
+          ${comida(g) || g.k === 'dulce' ? `<a class="p-link" href="${AGIL}" target="_blank" rel="noopener">Pedir delivery</a>` : ''}
+        </div>
+      </div>`;
+    recalcular();
+    origen = document.activeElement;
+    dish.hidden = false;
+    document.documentElement.style.overflow = 'hidden';
+    requestAnimationFrame(() => requestAnimationFrame(() => dish.classList.add('is-open')));
+    panel.scrollTop = 0;
+    panel.focus({ preventScroll: true });
+  }
+  function recalcular() {
+    if (!ficha) return;
+    const f = $('.p-calc', panel);
+    let base = ficha.it, total = ficha.it.p2 ? null : ficha.it.p;
+    const det = [];
+    if (f) {
+      const v = f.querySelector('input[name="var"]:checked');
+      if (v) { base = ficha.vars[+v.value]; total = base.p; if (base !== ficha.it) det.push(base.n); }
+      ficha.lados.forEach((l, k) => {
+        const x = f.querySelector(`input[name="lado${k}"]:checked`);
+        if (x && +x.value >= 0) { const a = AGR[+x.value]; total += Math.max(0, a.p - l.p); det.push(`${a.n.toLowerCase()} en vez de ${l.n.toLowerCase()}`); }
+      });
+      $$('input[name="extra"]:checked', f).forEach(x => { const a = AGR[+x.value]; total += a.p; det.push(`+ porción de ${a.n.toLowerCase()}`); });
+      $('.p-calc__v', f).textContent = total == null ? precio(base) : clp(total);
+      $('.p-calc__det', f).textContent = det.length ? det.join(' · ') : 'Tal como viene en la carta.';
+    }
+    const msg = `Hola Aroma Limeño, quiero consultar por: ${base.n}${det.filter(d => d !== base.n).length ? ' (' + det.filter(d => d !== base.n).join(', ') + ')' : ''}.${total != null ? ' Total estimado ' + clp(total) + '.' : ''}`;
+    $('.p-dish__wa', panel).href = `https://wa.me/${WA_NUM}?text=${encodeURIComponent(msg)}`;
+  }
+  function cerrarFicha() {
+    if (dish.hidden) return;
+    dish.classList.remove('is-open');
+    document.documentElement.style.overflow = '';
+    const fin = () => { if (!dish.classList.contains('is-open')) dish.hidden = true; };
+    reduce ? fin() : setTimeout(fin, 520);
+    if (origen && origen.focus) origen.focus({ preventScroll: true });
+    ficha = null;
+  }
+  panel.addEventListener('change', recalcular);
+  panel.addEventListener('submit', e => e.preventDefault());
+  dish.addEventListener('click', e => { if (e.target.closest('[data-cerrar]')) cerrarFicha(); });
+  addEventListener('keydown', e => {
+    if (dish.hidden) return;
+    if (e.key === 'Escape') { cerrarFicha(); return; }
+    if (e.key === 'Tab') {
+      const fs = $$('button, a[href], input', panel).filter(x => x.offsetParent !== null);
+      if (!fs.length) return;
+      const a = fs[0], z = fs[fs.length - 1];
+      if (e.shiftKey && (document.activeElement === a || document.activeElement === panel)) { e.preventDefault(); z.focus(); }
+      else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+    }
+  });
+  page.addEventListener('click', e => {
+    const li = e.target.closest('.p-item'); if (!li) return;
+    abrirFicha(li.dataset.n);
+  });
+  page.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const li = e.target.closest('.p-item'); if (!li) return;
+    e.preventDefault(); abrirFicha(li.dataset.n);
+  });
+
+  /* =============== reseñas =============== */
+  const track = $('.p-res__track'), rb = $$('.p-res__b');
+  if (track) {
+    const paso = () => { const c = track.querySelector('.p-res__c'); return c ? c.offsetWidth + 20 : 300; };
+    const estado = () => {
+      rb[0].disabled = track.scrollLeft < 8;
+      rb[1].disabled = track.scrollLeft + track.clientWidth > track.scrollWidth - 8;
+    };
+    rb.forEach(b => b.addEventListener('click', () => track.scrollBy({ left: +b.dataset.d * paso(), behavior: reduce ? 'auto' : 'smooth' })));
+    track.addEventListener('scroll', () => requestAnimationFrame(estado), { passive: true });
+    addEventListener('resize', estado); estado();
+  }
+
+  /* =============== horario: hoy y «abierto ahora» (hora de Chile) =============== */
+  const HORAS = { 0: ['12:30', '22:00'], 1: ['12:30', '23:15'], 2: ['12:30', '23:15'], 3: ['12:30', '23:15'], 4: ['12:30', '23:15'], 5: ['12:30', '23:45'], 6: ['12:30', '23:45'] };
+  const now = $('.p-visit__now');
+  function horario() {
+    if (!now) return;
+    let d, m;
+    try {
+      const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Santiago', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map(x => [x.type, x.value]));
+      d = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(p.weekday); m = +p.hour * 60 + +p.minute;
+    } catch (e) { const t = new Date(); d = t.getDay(); m = t.getHours() * 60 + t.getMinutes(); }
+    const min = s => { const [h, mm] = s.split(':'); return +h * 60 + +mm; };
+    const [a, c] = HORAS[d];
+    $$('.p-visit__tabla div').forEach(x => x.classList.toggle('is-hoy', +x.dataset.d === d));
+    const abierto = m >= min(a) && m < min(c);
+    now.classList.toggle('is-open', abierto); now.classList.toggle('is-closed', !abierto);
+    now.textContent = abierto ? `Abierto ahora · cierra a las ${c}` : (m < min(a) ? `Cerrado · abre hoy a las ${a}` : `Cerrado · abre mañana a las ${HORAS[(d + 1) % 7][0]}`);
+  }
+  horario(); setInterval(horario, 60000);
 })();
