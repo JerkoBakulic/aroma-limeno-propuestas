@@ -128,6 +128,7 @@
 
   /* =============== la carta =============== */
   const tabs = $('.p-tabs'), bar = $('.p-tabs__bar'), page = $('.p-page'), toc = $('.p-toc');
+  let aPagina = false;
   const arch = $('.p-arch'), aImgs = $$('.p-arch__img'), aWord = $('.p-arch__word'), aN = $('.p-arch__n'), aP = $('.p-arch__p');
   const q = $('#p-q'), qx = $('.p-search__x');
   const status = document.createElement('p'); status.className = 'sr'; status.setAttribute('aria-live', 'polite'); page.after(status);
@@ -239,7 +240,9 @@
       if (salida) { salida.cancel(); salida = null; }
       G = g; S = s; pintarPagina(); entrar();
       const top = $('.p-tabs').getBoundingClientRect().top;
-      if (top < pTop() - 10 || top > innerHeight * .6) $('.p-tabs').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      if (aPagina && innerWidth <= 1000) { const y = page.getBoundingClientRect().top + scrollY - $('.p-tabs').offsetHeight - pTop() - 12; scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }); }
+      else if (top < pTop() - 10 || top > innerHeight * .6) $('.p-tabs').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      aPagina = false;
       if (foco) page.focus({ preventScroll: true });
     };
     if (reduce) return cambiar();
@@ -255,7 +258,7 @@
     else if (e.key === 'Home') n = 0; else if (e.key === 'End') n = tabBtns.length - 1;
     if (n === null) return; e.preventDefault(); tabBtns[n].focus(); const habia = !!consulta; limpiar(false); ir(n, 0, false, habia);
   });
-  toc.addEventListener('click', e => { const b = e.target.closest('button'); if (b) ir(G, +b.dataset.s); });
+  toc.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { aPagina = true; ir(G, +b.dataset.s); } });
   page.addEventListener('click', e => { const b = e.target.closest('.p-turn'); if (!b) return; const v = vecino(+b.dataset.d); if (v) ir(v.g, v.s, true); });
   const ver = e => {
     const it = e.target.closest('.p-item'); if (!it) return;

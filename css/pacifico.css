@@ -613,3 +613,45 @@ html:not(.js) .p-step { position: static; padding: 40px 0; border-bottom: 1px so
   .p-opt span { min-height: 56px; padding: 8px 12px; font-size: 14.5px; }
 }
 .p-dish { z-index: 120; }
+
+/* índice de secciones de la carta: botones visibles, sin scroll propio (pedido cliente) */
+.p-arch__win { max-height: 34vh; }
+.p-toc { max-height: none; overflow: visible; border-top: 0; margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.p-toc button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1.5px solid var(--p-line); border-radius: 12px; background: var(--p-paper); font-size: 14px; line-height: 1.2; color: var(--p-ink); transition: background-color .25s, border-color .25s, color .25s; }
+.p-toc button b { flex: none; }
+.p-toc button small { margin-left: auto; color: var(--p-mute); }
+.p-toc button:hover { padding-left: 12px; border-color: var(--p-ink); }
+.p-toc button[aria-current="true"] { background: var(--p-ink); border-color: var(--p-ink); color: var(--p-paper); }
+.p-toc button[aria-current="true"] b { color: #e2a184; }
+.p-toc button[aria-current="true"] small { color: color-mix(in srgb, var(--p-paper) 70%, transparent); }
+@media (max-width: 1000px) {
+  .p-side { position: static; padding: 0; }
+  .p-toc { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin: 0; padding: 0; overflow: visible; }
+  .p-toc button { width: 100%; min-height: 46px; padding: 8px 12px; border-radius: 12px; white-space: normal; flex: initial; }
+  .p-toc button b, .p-toc button small { display: inline; }
+  .p-toc button:hover { padding-left: 12px; }
+}
+@media (max-width: 600px) { .p-toc { grid-template-columns: 1fr 1fr; } .p-toc button { font-size: 13.5px; padding: 8px 10px; } }
+@media (max-width: 1000px) { .p-toc { -webkit-mask-image: none; mask-image: none; } .p-toc::after { display: none; } }
+@media (min-width: 1001px) { .p-arch__win { aspect-ratio: 4 / 3; } }
+@media (min-width: 1001px) and (max-height: 820px) { .p-arch { display: none; } }
+
+/* ficha como panel desplegable a la derecha, sin ocupar toda la pantalla (pedido cliente) */
+.p-dish__panel { left: auto; right: 0; top: 0; bottom: 0; width: min(560px, calc(100% - 56px)); max-height: none; height: auto; display: block; border-radius: 0; box-shadow: -30px 0 60px -30px rgba(19,34,58,.55); transform: translateX(100%); }
+.p-dish.is-open .p-dish__panel { transform: none; }
+.p-dish__panel.sin-foto { display: block; }
+.p-dish__top { min-height: 60px; padding: 0 20px; gap: 14px; }
+.p-dish__topn { font-size: 19px; }
+.p-dish__fig { position: relative; top: 0; height: auto; aspect-ratio: 16 / 10; border-radius: 0; }
+.p-dish__body { padding: 26px 32px 0; }
+.p-calc__tot { margin-inline: -32px; padding-inline: 32px; }
+.p-opts { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+@media (max-width: 600px) {
+  .p-dish__panel { top: 0; width: calc(100% - 40px); height: auto; border-radius: 0; transform: translateX(100%); }
+  .p-dish__top { min-height: 54px; padding: 0 12px; }
+  .p-dish__back { padding: 0 14px 0 10px; font-size: 13px; }
+  .p-dish__topn { display: none; }
+  .p-dish__body { padding: 20px 16px 0; }
+  .p-calc__tot { margin-inline: -16px; padding-inline: 16px; }
+  .p-opts { grid-template-columns: 1fr 1fr; }
+}
