@@ -560,3 +560,20 @@ html:not(.js) .p-step { position: static; padding: 40px 0; border-bottom: 1px so
   .p-visit { grid-template-columns: minmax(0, 1fr); gap: 32px; margin-top: 56px; }
   .p-visit__map, .p-visit__map iframe { min-height: 300px; }
 }
+
+/* calculadora v2: cambiar cualquier ingrediente + total fijo abajo */
+.p-swap__por { margin: 14px 0 10px; font-size: 13px; font-weight: 600; color: var(--p-ink); }
+.p-swap__add, .p-swap__del { margin-top: 12px; padding: 0; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 600; color: var(--p-clay); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; min-height: 40px; }
+.p-swap__del { color: var(--p-mute); font-weight: 500; font-size: 13px; }
+.p-swap + .p-swap { border-top: 1px dashed var(--p-line); margin-top: 8px; }
+.p-calc__tot { position: sticky; bottom: 0; z-index: 2; margin: 24px -32px 0; padding: 14px 32px calc(14px + env(safe-area-inset-bottom)); background: var(--p-paper); box-shadow: 0 -14px 24px -18px rgba(19,34,58,.35); flex-wrap: wrap; align-items: center; }
+.p-calc__tot > div { flex: 1 1 200px; min-width: 0; }
+.p-calc__tot .p-calc__det { margin: 4px 0 0; font-size: 13px; line-height: 1.4; min-height: 0; }
+.p-calc__tot b { font-size: 40px; }
+.p-calc__pend { flex-basis: 100%; text-align: right; margin-top: -4px; font-style: normal; font-size: 12.5px; font-weight: 600; color: var(--p-clay); }
+@media (max-width: 600px) {
+  .p-dish__fig { aspect-ratio: 16 / 8; }
+  .p-calc__tot { margin-inline: -18px; padding-inline: 18px; }
+  .p-calc__tot b { font-size: 32px; }
+}
+.p-swaps { padding-bottom: 18px; }

@@ -304,19 +304,39 @@
   const secAgr = (CARTA.find(g => g.k === 'cocina') || { s: [] }).s.find(s => norm(s.n) === 'agregados');
   const AGR = secAgr ? secAgr.items.map(i => ({ n: i.n.replace(/^Porción de /i, ''), p: i.p })) : [];
   const agr = re => AGR.find(a => re.test(norm(a.n)));
-  /* acompañamientos que se reconocen en la descripción del plato → porción equivalente de la carta */
-  const LADOS = [
-    { re: /(acompanad[oa]s? (con|de)|con|y|,)\s+arroz(?! frito)/, a: /^arroz/, n: 'Arroz' },
-    { re: /papas fritas/, a: /^papas fritas/, n: 'Papas fritas' },
-    { re: /pure de papas|pure(?! de (camote|pallares))/, a: /^pure/, n: 'Puré de papas' },
-    { re: /camote/, a: /^camote/, n: 'Camote' },
-    { re: /\byucas?\b/, a: /^yuca/, n: 'Yuca' },
-    { re: /verduras salteadas/, a: /^verduras/, n: 'Verduras salteadas' },
+  /* ingredientes que se reconocen en la descripción → porción equivalente de «Agregados» (si existe) */
+  const ING = [
+    [/papas fritas/, 'Papas fritas', /^papas fritas/],
+    [/papas salteadas/, 'Papas salteadas', /^papas salteadas/],
+    [/pure de papas|pure(?! de (camote|pallares))/, 'Puré de papas', /^pure/],
+    [/papas (cocidas|al hilo)|pastel de papas|papa prensada|sobre papa\b/, 'Papas', null],
+    [/(^|[^a-z])arroz(?! frito)(?! y pallares)/, 'Arroz', /^arroz/],
+    [/risott?o|rissotto/, 'Risotto', /^riss?ott?o/],
+    [/camote/, 'Camote', /^camote/],
+    [/\byucas?\b/, 'Yuca', /^yuca/],
+    [/verduras/, 'Verduras', /^verduras/],
+    [/choclo/, 'Choclo', /^choclo/],
+    [/ensalada/, 'Ensalada', null],
+    [/porotos/, 'Porotos', null],
+    [/pollo|gallina/, 'Pollo', null],
+    [/filete|lomo|vacuno|carne|entrana/, 'Carne', null],
+    [/pescado|corvina|merluza|salmon|mero|reineta|atun/, 'Pescado', null],
+    [/camaron/, 'Camarones', null],
+    [/mariscos/, 'Mariscos', null],
+    [/pulpo/, 'Pulpo', null],
+    [/palta/, 'Palta', null],
+    [/queso|parmesano/, 'Queso', null],
+    [/huevo/, 'Huevo', null],
+    [/champinon/, 'Champiñones', null],
+    [/cebolla|zarza/, 'Cebolla', null],
   ];
-  const ladosDe = it => {
-    const t = norm(it.d || '');
-    return LADOS.filter(l => l.re.test(t)).map(l => ({ ...l, p: (agr(l.a) || {}).p })).filter(l => l.p);
+  const ingDe = it => {
+    const t = norm([it.d, it.x].filter(Boolean).join(' '));
+    const l = ING.filter(([re]) => re.test(t)).map(([, n, ra]) => { const g = ra && agr(ra); return { n, p: g ? g.p : null }; });
+    return [...l, { n: 'Otro ingrediente', p: null }];
   };
+  /* reemplazos: porciones con precio de la carta + proteínas (precio a confirmar, no está en la carta) */
+  const PROT = ['Pollo', 'Carne', 'Camarones', 'Pescado', 'Mariscos'].map(n => ({ n, p: null, prot: true }));
   /* versiones del mismo plato en la sección: «Arroz Chaufa de Pollo / de Carne / de Mariscos» */
   const baseDe = n => { const m = norm(n).match(/^(.+?) de (.+)$/); return m ? m[1] : null; };
   const variantesDe = (it, s) => {
@@ -331,17 +351,15 @@
     const r = todos.find(x => x.it.n === nombre); if (!r) return;
     const { it, g, s } = r;
     const vars = comida(g) ? variantesDe(it, s) : [];
-    const lados = comida(g) && norm(s.n) !== 'agregados' ? ladosDe(it) : [];
+    const quita = comida(g) && norm(s.n) !== 'agregados' ? ingDe(it) : [];
+    const pone = [...(g.k === 'cocina' ? AGR : []), ...PROT];
     const extras = comida(g) && norm(s.n) !== 'agregados' && g.k === 'cocina' ? AGR : [];
-    ficha = { it, s, vars, lados, extras };
+    ficha = { it, s, vars, quita, pone, extras, swaps: [{ q: -1, r: -1 }] };
     const opt = (name, val, label, extra, chk, type = 'radio') =>
       `<label class="p-opt"><input type="${type}" name="${name}" value="${val}"${chk ? ' checked' : ''}><span>${esc(label)}${extra ? ` <small>${extra}</small>` : ''}</span></label>`;
-    const dif = (a, b) => { const d = Math.max(0, a - b); return d ? '+' + clp(d) : 'sin costo'; };
     let calc = '';
     if (vars.length) calc += `<fieldset class="p-calc__g"><legend>Elige la proteína</legend><div class="p-opts">${vars.map((v, i) => opt('var', i, v.n.replace(new RegExp('^.+? de ', 'i'), ''), clp(v.p), v === it)).join('')}</div></fieldset>`;
-    lados.forEach((l, k) => {
-      calc += `<fieldset class="p-calc__g"><legend>Cambiar acompañamiento <em>${esc(l.n)}</em></legend><div class="p-opts">${opt('lado' + k, -1, 'Mantener ' + l.n.toLowerCase(), '', true)}${AGR.filter(a => !l.a.test(norm(a.n))).map(a => opt('lado' + k, AGR.indexOf(a), a.n, dif(a.p, l.p))).join('')}</div></fieldset>`;
-    });
+    if (quita.length) calc += `<div class="p-swaps"></div>`;
     if (extras.length) calc += `<fieldset class="p-calc__g"><legend>Agregar una porción</legend><div class="p-opts">${extras.map((a, i) => opt('extra', i, a.n, '+' + clp(a.p), false, 'checkbox')).join('')}</div></fieldset>`;
     const tieneCalc = !!calc;
     const desc = [it.d, it.x].filter(Boolean).join('. ');
@@ -353,14 +371,14 @@
         ${desc ? `<p class="p-dish__desc">${esc(desc)}</p>` : ''}
         <p class="p-dish__base"><span>Precio en carta</span><b>${precio(it)}</b></p>
         ${tieneCalc ? `<form class="p-calc">${calc}
-          <div class="p-calc__tot" aria-live="polite"><span>Total estimado</span><b class="p-calc__v"></b></div>
-          <p class="p-calc__det"></p>
-          <p class="p-calc__note">Precios de la carta vigente. Al cambiar un acompañamiento solo se cobra la diferencia si el nuevo cuesta más; confírmalo con tu garzón o al pedir.</p></form>` : ''}
+          <div class="p-calc__tot" aria-live="polite"><div><span>Total estimado</span><p class="p-calc__det"></p></div><b class="p-calc__v"></b><em class="p-calc__pend" hidden>+ cambio por confirmar</em></div>
+          <p class="p-calc__note">Precios de la carta vigente. Si cambias un acompañamiento por otro de la carta, solo se cobra la diferencia cuando el nuevo cuesta más; si quitas algo que no es acompañamiento, el reemplazo se cobra como porción. Los cambios de proteína se confirman con el local.</p></form>` : ''}
         <div class="p-dish__acts">
           <a class="p-pill p-dish__wa" href="#" target="_blank" rel="noopener"><span class="p-pill__l">Consultar por WhatsApp</span><span class="p-pill__c" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span></a>
           ${comida(g) || g.k === 'dulce' ? `<a class="p-link" href="${AGIL}" target="_blank" rel="noopener">Pedir delivery</a>` : ''}
         </div>
       </div>`;
+    pintarCambios();
     recalcular();
     origen = document.activeElement;
     dish.hidden = false;
@@ -369,25 +387,62 @@
     panel.scrollTop = 0;
     panel.focus({ preventScroll: true });
   }
-  function recalcular() {
+  const costoCambio = (q, r) => r.prot ? null : (q.p != null ? Math.max(0, r.p - q.p) : r.p);
+  function pintarCambios() {
+    const box = $('.p-swaps', panel); if (!box) return;
+    const { quita, pone, swaps } = ficha;
+    const opt = (name, val, label, extra, chk) =>
+      `<label class="p-opt"><input type="radio" name="${name}" value="${val}"${chk ? ' checked' : ''}><span>${esc(label)}${extra ? ` <small>${extra}</small>` : ''}</span></label>`;
+    box.innerHTML = swaps.map((w, k) => {
+      const q = quita[w.q];
+      return `<fieldset class="p-calc__g p-swap"><legend>${swaps.length > 1 ? `Cambio ${k + 1} · ` : 'Cambiar un ingrediente · '}¿qué quitas?</legend>
+        <div class="p-opts">${quita.map((x, i) => opt('q' + k, i, x.n, '', i === w.q)).join('')}</div>
+        ${q ? `<p class="p-swap__por">¿Por cuál lo cambias?</p>
+        <div class="p-opts">${opt('r' + k, -1, 'Solo quitar', 'sin costo', w.r === -1)}${pone.filter(r => norm(r.n) !== norm(q.n)).map(r => {
+          const c = costoCambio(q, r); return opt('r' + k, pone.indexOf(r), r.n, c == null ? 'a confirmar' : c ? '+' + clp(c) : 'sin costo', pone.indexOf(r) === w.r);
+        }).join('')}</div>` : ''}
+        ${swaps.length > 1 ? `<button class="p-swap__del" type="button" data-del="${k}">Quitar este cambio</button>` : ''}
+      </fieldset>`;
+    }).join('') + (swaps.length < 3 && swaps[swaps.length - 1].q >= 0 ? `<button class="p-swap__add" type="button">+ Cambiar otro ingrediente</button>` : '');
+  }
+  function recalcular(e) {
     if (!ficha) return;
     const f = $('.p-calc', panel);
-    let base = ficha.it, total = ficha.it.p2 ? null : ficha.it.p;
+    const t = e && e.target;
+    if (t && /^[qr]\d$/.test(t.name)) {
+      const w = ficha.swaps[+t.name[1]];
+      if (t.name[0] === 'q') { w.q = +t.value; w.r = -1; } else w.r = +t.value;
+      pintarCambios();
+      const sig = $(`input[name="${t.name}"][value="${t.value}"]`, panel); sig && sig.focus({ preventScroll: true });
+    }
+    let base = ficha.it, total = ficha.it.p2 ? null : ficha.it.p, pend = false;
     const det = [];
     if (f) {
       const v = f.querySelector('input[name="var"]:checked');
       if (v) { base = ficha.vars[+v.value]; total = base.p; if (base !== ficha.it) det.push(base.n); }
-      ficha.lados.forEach((l, k) => {
-        const x = f.querySelector(`input[name="lado${k}"]:checked`);
-        if (x && +x.value >= 0) { const a = AGR[+x.value]; total += Math.max(0, a.p - l.p); det.push(`${a.n.toLowerCase()} en vez de ${l.n.toLowerCase()}`); }
+      ficha.swaps.forEach(w => {
+        const q = ficha.quita[w.q]; if (!q) return;
+        const qn = q.n === 'Otro ingrediente' ? 'otro ingrediente' : q.n.toLowerCase();
+        if (w.r < 0) { det.push(`sin ${qn}`); return; }
+        const r = ficha.pone[w.r], c = costoCambio(q, r);
+        if (c == null) pend = true; else if (total != null) total += c;
+        det.push(`${r.n.toLowerCase()} en vez de ${qn}${c == null ? ' (precio a confirmar)' : ''}`);
       });
-      $$('input[name="extra"]:checked', f).forEach(x => { const a = AGR[+x.value]; total += a.p; det.push(`+ porción de ${a.n.toLowerCase()}`); });
+      $$('input[name="extra"]:checked', f).forEach(x => { const a = AGR[+x.value]; if (total != null) total += a.p; det.push(`+ porción de ${a.n.toLowerCase()}`); });
       $('.p-calc__v', f).textContent = total == null ? precio(base) : clp(total);
+      $('.p-calc__pend', f).hidden = !pend;
       $('.p-calc__det', f).textContent = det.length ? det.join(' · ') : 'Tal como viene en la carta.';
     }
-    const msg = `Hola Aroma Limeño, quiero consultar por: ${base.n}${det.filter(d => d !== base.n).length ? ' (' + det.filter(d => d !== base.n).join(', ') + ')' : ''}.${total != null ? ' Total estimado ' + clp(total) + '.' : ''}`;
+    const extra = det.filter(d => d !== base.n);
+    const msg = `Hola Aroma Limeño, quiero consultar por: ${base.n}${extra.length ? ' (' + extra.join(', ') + ')' : ''}.${total != null ? ' Total estimado ' + clp(total) + (pend ? ' + cambio por confirmar' : '') + '.' : ''}`;
     $('.p-dish__wa', panel).href = `https://wa.me/${WA_NUM}?text=${encodeURIComponent(msg)}`;
   }
+  panel.addEventListener('click', e => {
+    if (!ficha) return;
+    const add = e.target.closest('.p-swap__add'), del = e.target.closest('.p-swap__del');
+    if (add) { ficha.swaps.push({ q: -1, r: -1 }); pintarCambios(); recalcular(); const n = $$('.p-swap', panel).pop(); n && n.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' }); }
+    if (del) { ficha.swaps.splice(+del.dataset.del, 1); pintarCambios(); recalcular(); }
+  });
   function cerrarFicha() {
     if (dish.hidden) return;
     dish.classList.remove('is-open');
