@@ -126,6 +126,46 @@
   addEventListener('resize', onScroll);
   onScroll();
 
+  /* banda de los cinco tiempos: se arrastra con el dedo o el mouse y se acomoda al tiempo más cercano */
+  const band = $('.p-band');
+  if (band && T && mains.length > 1) {
+    const recorrido = () => T.offsetHeight - stage.offsetHeight;
+    const yDe = c => T.getBoundingClientRect().top + scrollY - pTop() + clamp(c / (N - .2)) * recorrido();
+    const pasoT = () => mains[1].offsetLeft - mains[0].offsetLeft;
+    const irA = (c, suave) => {
+      scrollTo({ top: yDe(c), behavior: suave && !reduce ? 'smooth' : 'instant' });
+      if (!suave) { medir(); smooth = target; pintarTiempos(smooth); }
+    };
+    let drag = null, finDrag = 0;
+    band.addEventListener('pointerdown', e => {
+      if (e.button) return;
+      drag = { x: e.clientX, y: e.clientY, c: target, id: e.pointerId, mov: false };
+    });
+    band.addEventListener('pointermove', e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.x;
+      if (!drag.mov) {
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(e.clientY - drag.y)) return;
+        drag.mov = true; band.classList.add('is-drag', 'is-usada');
+        if (e.pointerType === 'mouse') try { band.setPointerCapture(e.pointerId); } catch { }
+      }
+      e.preventDefault();
+      irA(clamp(drag.c - dx / pasoT(), 0, N - .2), false);
+    });
+    const soltar = e => {
+      if (!drag || (e && e.pointerId !== drag.id)) return;
+      const mov = drag.mov; drag = null; band.classList.remove('is-drag');
+      if (mov) finDrag = performance.now();
+      if (mov) irA(clamp(Math.round(target - .1), 0, N - 1) + .1, true);
+    };
+    band.addEventListener('pointerup', soltar);
+    band.addEventListener('pointercancel', soltar);
+    band.addEventListener('dragstart', e => e.preventDefault());
+    /* tocar una baldosa o un número romano lleva a ese tiempo */
+    mains.forEach((t, k) => t.addEventListener('click', () => { if (performance.now() - finDrag > 350) irA(k + .1, true); }));
+    ticks.forEach((t, k) => { t.style.cursor = 'pointer'; t.addEventListener('click', () => irA(k + .1, true)); });
+  }
+
   /* =============== la carta =============== */
   const tabs = $('.p-tabs'), bar = $('.p-tabs__bar'), page = $('.p-page'), toc = $('.p-toc');
   let aPagina = false;
