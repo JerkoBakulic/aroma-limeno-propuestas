@@ -363,7 +363,7 @@
     if (extras.length) calc += `<fieldset class="p-calc__g"><legend>Agregar una porción</legend><div class="p-opts">${extras.map((a, i) => opt('extra', i, a.n, '+' + clp(a.p), false, 'checkbox')).join('')}</div></fieldset>`;
     const tieneCalc = !!calc;
     const desc = [it.d, it.x].filter(Boolean).join('. ');
-    panel.innerHTML = `<button class="p-dish__x" type="button" data-cerrar aria-label="Cerrar"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6"/></svg></button>
+    panel.innerHTML = `<div class="p-dish__top"><button class="p-dish__back" type="button" data-cerrar><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8H3M7 4L3 8l4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Volver a la carta</button><span class="p-dish__topn">${esc(it.n)}</span></div>
       ${it.f ? `<figure class="p-dish__fig"><img src="${it.f}" alt="${esc(it.n)}"></figure>` : ''}
       <div class="p-dish__body">
         <p class="p-dish__sec">${esc(g.n)} · ${esc(s.n)}</p>
@@ -381,6 +381,7 @@
     pintarCambios();
     recalcular();
     origen = document.activeElement;
+    panel.classList.toggle('sin-foto', !it.f);
     dish.hidden = false;
     document.documentElement.style.overflow = 'hidden';
     requestAnimationFrame(() => requestAnimationFrame(() => dish.classList.add('is-open')));
