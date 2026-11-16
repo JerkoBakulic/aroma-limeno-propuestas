@@ -655,3 +655,7 @@ html:not(.js) .p-step { position: static; padding: 40px 0; border-bottom: 1px so
   .p-calc__tot { margin-inline: -16px; padding-inline: 16px; }
   .p-opts { grid-template-columns: 1fr 1fr; }
 }
+/* panel más angosto: se nota que es un desplegable lateral */
+.p-dish__panel { width: min(460px, 86vw); }
+.p-opts { grid-template-columns: 1fr 1fr; }
+@media (max-width: 600px) { .p-dish__panel { width: 84vw; } .p-dish__fig { aspect-ratio: 16 / 11; } .p-opt span { font-size: 13.5px; padding: 8px 10px; } }
